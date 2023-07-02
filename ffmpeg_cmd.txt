@@ -1,0 +1,5 @@
+ffmpeg -i gpx1920x1080.jpg -f rawvideo -pix_fmt bgr24 gpx1920x1080.rgb
+ffplay -video_size 1920x1080 -pixel_format bgr24 gpx1920x1080.rgb
+
+ffplay -video_size 672x474 -pixel_format bgr24 bgr24_1920x1080_to_672x474_by_bilinear.rgb
+ffplay -video_size 672x474 -pixel_format bgr24 bgr24_1920x1080_to_672x474_by_nearest_neighbor.rgb
