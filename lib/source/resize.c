@@ -1,10 +1,19 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <string.h>
 #include <unistd.h>
+
+#include <errno.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+
 #include "img_common.h"
 #include "img_resize.h"
 
+static void *image_resize_thread_pool(void *arg);
 static void image_line_resize_by_nearest_neighbor_interpolation(img_info_t *info);
 static void image_line_resize_by_bilinearinterpolation(img_info_t *info);
 
@@ -50,7 +59,132 @@ void image_resize_using_paraller(enum img_type_identifier_enum img_type,
                                  uint8_t *src, int32_t src_width, int32_t src_height, 
                                  uint8_t *dst, int32_t dst_width, int32_t dst_height)
 {
+    const process_func_t func[MAX_OF_IMG_RESIZE_METHOD] = {
+        [IMG_RESIZE_BY_NEAREST_NEIGHBOR]    = image_line_resize_by_nearest_neighbor_interpolation,
+        [IMG_RESIZE_BY_BILINEAR]            = image_line_resize_by_bilinearinterpolation,
+        [IMG_RESIZE_BY_CUBIC]               = NULL,
+    };
+    int32_t row = 0;
+    img_info_t info = {
+        .bpp = image_get_bpp(img_type),
+        .func = func[method],
+        .img = {
+            [IMG_ID_SRC] = {
+                .buf = src,
+                .width = src_width,
+                .height = src_height,
+                .stride = image_get_stride(image_get_bpp(img_type), src_width),
+            },
+            [IMG_ID_DST] = {
+                .buf = dst,
+                .width = dst_width,
+                .height = dst_height,
+                .stride = image_get_stride(image_get_bpp(img_type), dst_width),
+            },
+        },
+    };
+    img_msg_queue_t msg = {
+        .id = 1,
+    };
 
+    long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    pthread_t thread_id[MAX_OF_CPU];
+    key_t msg_key[MAX_OF_CPU];
+    int msq_id[MAX_OF_CPU];
+    int32_t i = 0;
+    int result = 0;
+    int32_t id = 0;
+
+    if(MAX_OF_CPU < cpus)
+    {
+        cpus = MAX_OF_CPU;
+    }
+
+    for(i = 0; i < cpus; ++i)
+    {
+        msg_key[i] = ftok(".", i);
+        msq_id[i] = msgget(msg_key[i], IPC_CREAT | 0666);
+        if(msq_id[i] < 0)
+        {
+            fprintf(stderr, "create message queue key is failed...\n");
+            exit(-1);
+        }
+
+        result = pthread_create(&thread_id[i], NULL, image_resize_thread_pool, (void*)&msg_key[i]);
+        if (result != 0)
+        {
+            fprintf(stderr, "create pthread is failed...\n");
+            exit(1);
+        }
+    }
+
+    for(row = 0; row < dst_height; ++row)
+    {
+        info.row = row;
+
+        id = row % cpus;
+        memcpy(&msg.info, &info, sizeof(img_info_t));
+
+        result = msgsnd(msq_id[id], &msg, sizeof(img_info_t), IPC_NOWAIT);
+        if(result == -1)
+        {
+            fprintf(stderr, "msgsnd is failed...(%d, %s)\n", errno, strerror(errno));
+            exit(1);
+        }
+        // info.func(&info);
+    }
+
+    info.row = -1;
+    for(i = 0; i < cpus; ++i)
+    {
+        memcpy(&msg.info, &info, sizeof(img_info_t));
+        result = msgsnd(msq_id[i], &msg, sizeof(img_info_t), IPC_NOWAIT);
+        if(result == -1)
+        {
+            fprintf(stderr, "msgsnd is failed...(%d, %s)\n", errno, strerror(errno));
+            exit(-1);
+        }
+    }
+
+    for(i = 0; i < cpus; ++i)
+    {
+        pthread_join(thread_id[i], NULL);
+        result = msgctl(msq_id[i], IPC_RMID, NULL);
+        if (result == -1)
+        {
+            fprintf(stderr, "remove message queue key is failed...\n");
+            exit(-1);
+        }
+    }
+}
+
+static void *image_resize_thread_pool(void *arg)
+{
+    key_t msg_key = *((key_t *)arg);
+    int msg_id = msgget(msg_key, IPC_CREAT | 0666);
+    int result = 0;
+    img_msg_queue_t msg;
+    
+    while(1)
+    {
+        result = msgrcv(msg_id, &msg, sizeof(img_info_t), 0, 0);
+        if (result== -1) 
+        {
+            fprintf(stderr, "msgrcv is failed...\n");
+            exit(-1);
+        }
+
+        if(msg.info.row != -1)
+        {
+            msg.info.func(&msg.info);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // pthread_exit(NULL);
 }
 
 static void image_line_resize_by_nearest_neighbor_interpolation(img_info_t *info)

@@ -3,6 +3,7 @@
 
 #define BITS_PER_BYTE   (8)
 #define ALIGN4          (4)
+#define MAX_OF_CPU      (16)
 
 typedef struct image_information_structure img_info_t;
 typedef void(*process_func_t)(img_info_t *info);
@@ -37,6 +38,13 @@ struct image_information_structure
         int32_t height;
         int32_t stride;
     } img[MAX_OF_IMG_ID];
+};
+
+typedef struct image_message_queue_structure img_msg_queue_t;
+struct image_message_queue_structure
+{
+    long id;
+    struct image_information_structure info;
 };
 
 extern int32_t image_get_bpp(enum img_type_identifier_enum img_type);
