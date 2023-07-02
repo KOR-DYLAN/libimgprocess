@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
     dst = (uint8_t *)malloc(dst_len);
     assert(dst != NULL);
 
+    /* resize by nearest neighbor */
     memset(dst, 0, dst_len);
     clock_gettime(CLOCK_MONOTONIC, &begin);
     image_resize(IMG_TYPE_ID_BGR24, IMG_RESIZE_BY_NEAREST_NEIGHBOR, src, src_width, src_height, dst, dst_width, dst_height);
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
     assert(ret == dst_len);
     close(fd);
 
+    /* resize by bilinear */
     memset(dst, 0, dst_len);
     clock_gettime(CLOCK_MONOTONIC, &begin);
     image_resize(IMG_TYPE_ID_BGR24, IMG_RESIZE_BY_BILINEAR, src, src_width, src_height, dst, dst_width, dst_height);
@@ -93,6 +95,42 @@ int main(int argc, char *argv[])
     elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
     printf("resize by bilinear - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
     sprintf(name, "bgr24_%dx%d_to_%dx%d_by_bilinear.rgb\n", src_width, src_height, dst_width, dst_height);
+    fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
+    if(fd < 0)
+    {
+        fprintf(stderr, "%s file is not opend...(%d, %s)\n", name, errno, strerror(errno));
+        exit(-1);
+    }
+    ret = write(fd, dst, dst_len);
+    assert(ret == dst_len);
+    close(fd);
+
+    /* paraller resize by nearest neighbor */
+    memset(dst, 0, dst_len);
+    clock_gettime(CLOCK_MONOTONIC, &begin);
+    image_resize_using_paraller(IMG_TYPE_ID_BGR24, IMG_RESIZE_BY_NEAREST_NEIGHBOR, src, src_width, src_height, dst, dst_width, dst_height);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
+    printf("paraller resize by nearest neighbor - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
+    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_nearest_neighbor.rgb\n", src_width, src_height, dst_width, dst_height);
+    fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
+    if(fd < 0)
+    {
+        fprintf(stderr, "%s file is not opend...(%d, %s)\n", name, errno, strerror(errno));
+        exit(-1);
+    }
+    ret = write(fd, dst, dst_len);
+    assert(ret == dst_len);
+    close(fd);
+
+    /* paraller resize by bilinear */
+    memset(dst, 0, dst_len);
+    clock_gettime(CLOCK_MONOTONIC, &begin);
+    image_resize_using_paraller(IMG_TYPE_ID_BGR24, IMG_RESIZE_BY_BILINEAR, src, src_width, src_height, dst, dst_width, dst_height);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
+    printf("paraller resize by bilinear - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
+    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_bilinear.rgb\n", src_width, src_height, dst_width, dst_height);
     fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
     if(fd < 0)
     {
