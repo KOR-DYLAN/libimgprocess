@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     int fd = 0;
     off_t file_size = 0;
     ssize_t ret = 0;
-    char name[256];
+    char name[512];
 
     struct timespec begin, end;
     uint64_t elapsed = 0;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
     printf("resize by nearest neighbor - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
-    sprintf(name, "bgr24_%dx%d_to_%dx%d_by_nearest_neighbor.rgb\n", src_width, src_height, dst_width, dst_height);
+    sprintf(name, "bgr24_%dx%d_to_%dx%d_by_nearest_neighbor.rgb", src_width, src_height, dst_width, dst_height);
     fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
     if(fd < 0)
     {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
     printf("resize by bilinear - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
-    sprintf(name, "bgr24_%dx%d_to_%dx%d_by_bilinear.rgb\n", src_width, src_height, dst_width, dst_height);
+    sprintf(name, "bgr24_%dx%d_to_%dx%d_by_bilinear.rgb", src_width, src_height, dst_width, dst_height);
     fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
     if(fd < 0)
     {
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
     printf("paraller resize by nearest neighbor - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
-    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_nearest_neighbor.rgb\n", src_width, src_height, dst_width, dst_height);
+    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_nearest_neighbor.rgb", src_width, src_height, dst_width, dst_height);
     fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
     if(fd < 0)
     {
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = ((end.tv_sec - begin.tv_sec) * (uint64_t)NANOS) + (end.tv_nsec - begin.tv_nsec);
     printf("paraller resize by bilinear - %dx%d to %dx%d, %lu [us]\n", src_width, src_height, dst_width, dst_height, elapsed / PER_MICROSEC);
-    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_bilinear.rgb\n", src_width, src_height, dst_width, dst_height);
+    sprintf(name, "paraller_bgr24_%dx%d_to_%dx%d_by_bilinear.rgb", src_width, src_height, dst_width, dst_height);
     fd = open(name, O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE);
     if(fd < 0)
     {
