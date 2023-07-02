@@ -5,6 +5,7 @@ project(imgprocess VERSION 0.1.0 LANGUAGES C)
 
 list(APPEND inc include)
 list(APPEND src source/common.c)
+list(APPEND src source/img_generic_queue.c)
 list(APPEND src source/resize.c)
 
 add_library(${PROJECT_NAME} ${src})
